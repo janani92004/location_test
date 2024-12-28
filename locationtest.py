@@ -1,32 +1,48 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Get User Location</title>
-</head>
-<body>
-    <h1>Get User Location</h1>
-    <button id="getLocationBtn">Get Location</button>
-    <p id="locationOutput"></p>
+import streamlit as st
+import time
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
-    <script>
-        document.getElementById('getLocationBtn').addEventListener('click', function() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition((position) => {
-                    const latitude = position.coords.latitude;
-                    const longitude = position.coords.longitude;
-                    document.getElementById('locationOutput').innerText = 
-                        `Latitude: ${latitude}, Longitude: ${longitude}`;
-                }, (error) => {
-                    document.getElementById('locationOutput').innerText = 
-                        `Error getting location: ${error.message}`;
-                });
-            } else {
-                document.getElementById('locationOutput').innerText = 
-                    "Geolocation is not supported by this browser.";
-            }
-        });
-    </script>
-</body>
-</html>
+# Function to get location using Selenium
+def get_location_with_selenium():
+    # Set up the Selenium WebDriver
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless')  # Run in headless mode (no GUI)
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+
+    # Open the local HTML file
+    driver.get("locationtest_html.html")  # Update this path
+
+    # Click the "Get Location" button
+    get_location_button = driver.find_element(By.ID, "getLocationBtn")
+    get_location_button.click()
+
+    # Wait for the location to be retrieved
+    time.sleep(2)  # Adjust this time as needed
+
+    # Extract latitude and longitude from the output paragraph
+    location_output = driver.find_element(By.ID, "locationOutput").text
+    driver.quit()
+
+    # Parse the latitude and longitude from the output
+    if "Latitude:" in location_output:
+        lat_lon = location_output.split(", ")
+        latitude = lat_lon[0].split(": ")[1]
+        longitude = lat_lon[1].split(": ")[1]
+        return latitude, longitude
+    else:
+        return None, None
+
+# Streamlit app layout
+st.title("Get User Location")
+st.write("Click the button below to get your latitude and longitude:")
+
+# Button to get location
+if st.button("Get Location"):
+    latitude, longitude = get_location_with_selenium()
+    if latitude and longitude:
+        st.write(f"Latitude: {latitude}, Longitude: {longitude}")
+    else:
+        st.write("Could not retrieve location.")
